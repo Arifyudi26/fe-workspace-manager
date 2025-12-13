@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthStore } from "@/store/authStore";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
@@ -12,25 +11,20 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
-  const { login } = useAuth();
+  const { login, isLoading } = useAuthStore();
   const router = useRouter();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
-    setIsLoading(true);
 
     try {
       await login(email, password);
-      // Set cookie for middleware
-      document.cookie = "auth-token=mock-token-123; path=/";
       router.push("/projects");
     } catch (err) {
-      setError("Login failed. Please check your credentials.");
-    } finally {
-      setIsLoading(false);
+      const message = err instanceof Error ? err.message : "Login failed";
+      setError(message);
     }
   };
 
@@ -68,15 +62,14 @@ export default function LoginPage() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
             />
 
             <Button
               type="submit"
               className="w-full cursor-pointer"
-              isLoading={isLoading}
+              disabled={isLoading}
             >
-              Sign In
+              {isLoading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
         </CardBody>

@@ -1,13 +1,13 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
+import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import { ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout, isLoading } = useAuthStore();
   const router = useRouter();
 
   if (isLoading) {
