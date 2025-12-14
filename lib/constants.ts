@@ -13,21 +13,3 @@ export const STATUS_COLORS: Record<ProjectStatus, string> = {
   Paused: "bg-yellow-100 text-yellow-800 border-yellow-200",
   Archived: "bg-gray-100 text-gray-800 border-gray-200",
 };
-
-export const ITEMS_PER_PAGE = 10;
-
-export const ROUTES = {
-  HOME: "/",
-  LOGIN: "/login",
-  PROJECTS: "/projects",
-  PROJECT_DETAIL: (id: string) => `/projects/${id}`,
-  SETTINGS_BILLING: "/settings/billing",
-} as const;
-
-export const API_ENDPOINTS = {
-  LOGIN: "/api/auth/login",
-  LOGOUT: "/api/auth/logout",
-  PROJECTS: "/api/projects",
-  PROJECT: (id: string) => `/api/projects/${id}`,
-  BILLING: "/api/billing",
-} as const;

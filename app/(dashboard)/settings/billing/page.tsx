@@ -7,48 +7,25 @@ import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { BillingData, PaymentMethod } from "@/types";
+import {
+  generateId,
+  formatCardNumber,
+  formatExpiryDate,
+  formatPhoneNumber,
+} from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 const STEPS = ["Company Profile", "Billing Address", "Payment Methods"];
-
-const generateId = (): string => {
-  return Date.now().toString();
-};
-
-// Format card number with spaces (1234 5678 9012 3456)
-const formatCardNumber = (value: string): string => {
-  const cleaned = value.replace(/\s/g, "");
-  const chunks = cleaned.match(/.{1,4}/g);
-  return chunks ? chunks.join(" ") : cleaned;
-};
-
-// Format expiry date (MM/YY)
-const formatExpiryDate = (value: string): string => {
-  const cleaned = value.replace(/\D/g, "");
-  if (cleaned.length >= 2) {
-    return cleaned.slice(0, 2) + "/" + cleaned.slice(2, 4);
-  }
-  return cleaned;
-};
-
-// Format phone number
-const formatPhoneNumber = (value: string): string => {
-  const cleaned = value.replace(/\D/g, "");
-  if (cleaned.length <= 3) return cleaned;
-  if (cleaned.length <= 7)
-    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
-  return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(
-    6,
-    10
-  )}`;
-};
 
 // Format postal code
 const formatPostalCode = (value: string): string => {
   return value.replace(/[^0-9-]/g, "").slice(0, 10);
 };
 
-export default function BillingPage() {
+export default function BillingFormPage() {
   const [currentStep, setCurrentStep] = useState(0);
+  const router = useRouter();
+
   const [paymentForm, setPaymentForm] = useState<Partial<PaymentMethod>>({
     cardNumber: "",
     cardHolder: "",
@@ -124,7 +101,7 @@ export default function BillingPage() {
 
     // Validate expiry date
     if (paymentForm.expiryDate) {
-      const [month, year] = paymentForm.expiryDate.split("/");
+      const [month] = paymentForm.expiryDate.split("/");
       const monthNum = parseInt(month);
       if (monthNum < 1 || monthNum > 12) {
         setModal({
@@ -196,7 +173,10 @@ export default function BillingPage() {
     message: "",
   });
 
-  const closeModal = () => setModal({ isOpen: false, title: "", message: "" });
+  const closeModal = () => {
+    setModal({ isOpen: false, title: "", message: "" });
+    router.push("/settings");
+  };
 
   return (
     <>
@@ -390,7 +370,7 @@ export default function BillingPage() {
                       className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded flex items-center justify-center">
+                        <div className="w-12 h-8 bg-linear-to-r from-blue-600 to-purple-600 rounded flex items-center justify-center">
                           <svg
                             className="w-6 h-6 text-white"
                             fill="none"

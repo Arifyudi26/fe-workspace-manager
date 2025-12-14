@@ -1,0 +1,25 @@
+[
+  {
+    "companyProfile": {
+      "companyName": "Climber.style",
+      "email": "test@gmail.com",
+      "phone": "(123) 123-1234"
+    },
+    "billingAddress": {
+      "country": "ID",
+      "city": "Jawa tengah",
+      "address": "Wonosobo",
+      "postalCode": "16962"
+    },
+    "paymentMethods": [
+      {
+        "id": "1765681103324",
+        "cardNumber": "1231 2312 3",
+        "cardHolder": "ASD",
+        "expiryDate": "12/12",
+        "cvv": "123",
+        "isDefault": true
+      }
+    ]
+  }
+]
