@@ -14,6 +14,39 @@ const generateId = (): string => {
   return Date.now().toString();
 };
 
+// Format card number with spaces (1234 5678 9012 3456)
+const formatCardNumber = (value: string): string => {
+  const cleaned = value.replace(/\s/g, "");
+  const chunks = cleaned.match(/.{1,4}/g);
+  return chunks ? chunks.join(" ") : cleaned;
+};
+
+// Format expiry date (MM/YY)
+const formatExpiryDate = (value: string): string => {
+  const cleaned = value.replace(/\D/g, "");
+  if (cleaned.length >= 2) {
+    return cleaned.slice(0, 2) + "/" + cleaned.slice(2, 4);
+  }
+  return cleaned;
+};
+
+// Format phone number
+const formatPhoneNumber = (value: string): string => {
+  const cleaned = value.replace(/\D/g, "");
+  if (cleaned.length <= 3) return cleaned;
+  if (cleaned.length <= 7)
+    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
+  return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(
+    6,
+    10
+  )}`;
+};
+
+// Format postal code
+const formatPostalCode = (value: string): string => {
+  return value.replace(/[^0-9-]/g, "").slice(0, 10);
+};
+
 export default function BillingPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [paymentForm, setPaymentForm] = useState<Partial<PaymentMethod>>({
@@ -29,6 +62,7 @@ export default function BillingPage() {
     control,
     handleSubmit,
     trigger,
+    setValue,
     formState: { errors },
   } = useForm<BillingData>({
     defaultValues: {
@@ -86,6 +120,20 @@ export default function BillingPage() {
         message: "Please fill in all payment details",
       });
       return;
+    }
+
+    // Validate expiry date
+    if (paymentForm.expiryDate) {
+      const [month, year] = paymentForm.expiryDate.split("/");
+      const monthNum = parseInt(month);
+      if (monthNum < 1 || monthNum > 12) {
+        setModal({
+          isOpen: true,
+          title: "Invalid expiry date",
+          message: "Month must be between 01 and 12",
+        });
+        return;
+      }
     }
 
     const newMethod: PaymentMethod = {
@@ -173,7 +221,7 @@ export default function BillingPage() {
             <div key={step} className="flex items-center flex-1">
               <div className="flex items-center">
                 <div
-                  className={`h-10 w-10 rounded-full flex items-center justify-center font-medium ${
+                  className={`h-10 w-10 rounded-full flex items-center justify-center font-medium transition-colors ${
                     index <= currentStep
                       ? "bg-blue-600 text-white"
                       : "bg-gray-200 text-gray-600"
@@ -182,7 +230,7 @@ export default function BillingPage() {
                   {index + 1}
                 </div>
                 <span
-                  className={`ml-3 text-sm font-medium ${
+                  className={`ml-3 text-sm font-medium transition-colors ${
                     index <= currentStep ? "text-blue-600" : "text-gray-500"
                   }`}
                 >
@@ -190,7 +238,11 @@ export default function BillingPage() {
                 </span>
               </div>
               {index < STEPS.length - 1 && (
-                <div className="flex-1 h-0.5 bg-gray-200 mx-4" />
+                <div
+                  className={`flex-1 h-0.5 mx-4 transition-colors ${
+                    index < currentStep ? "bg-blue-600" : "bg-gray-200"
+                  }`}
+                />
               )}
             </div>
           ))}
@@ -207,25 +259,44 @@ export default function BillingPage() {
             <div className="space-y-4">
               <Input
                 label="Company Name"
+                placeholder="Acme Corporation"
                 {...register("companyProfile.companyName", {
                   required: "Company name is required",
+                  minLength: {
+                    value: 2,
+                    message: "Company name must be at least 2 characters",
+                  },
                 })}
                 error={errors.companyProfile?.companyName?.message}
               />
               <Input
                 label="Email"
                 type="email"
+                placeholder="company@example.com"
                 {...register("companyProfile.email", {
                   required: "Email is required",
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "Invalid email address",
+                  },
                 })}
                 error={errors.companyProfile?.email?.message}
               />
               <Input
                 label="Phone"
                 type="tel"
+                placeholder="(123) 456-7890"
                 {...register("companyProfile.phone", {
                   required: "Phone is required",
+                  pattern: {
+                    value: /^[\d\s\-\(\)]+$/,
+                    message: "Invalid phone number",
+                  },
                 })}
+                onChange={(e) => {
+                  const formatted = formatPhoneNumber(e.target.value);
+                  setValue("companyProfile.phone", formatted);
+                }}
                 error={errors.companyProfile?.phone?.message}
               />
             </div>
@@ -233,32 +304,73 @@ export default function BillingPage() {
 
           {currentStep === 1 && (
             <div className="space-y-4">
-              <Input
-                label="Country"
-                {...register("billingAddress.country", {
-                  required: "Country is required",
-                })}
-                error={errors.billingAddress?.country?.message}
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Country
+                </label>
+                <select
+                  {...register("billingAddress.country", {
+                    required: "Country is required",
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select a country</option>
+                  <option value="US">United States</option>
+                  <option value="UK">United Kingdom</option>
+                  <option value="CA">Canada</option>
+                  <option value="AU">Australia</option>
+                  <option value="ID">Indonesia</option>
+                  <option value="SG">Singapore</option>
+                  <option value="MY">Malaysia</option>
+                  <option value="JP">Japan</option>
+                  <option value="KR">South Korea</option>
+                  <option value="OTHER">Other</option>
+                </select>
+                {errors.billingAddress?.country && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.billingAddress.country.message}
+                  </p>
+                )}
+              </div>
+
               <Input
                 label="City"
+                placeholder="New York"
                 {...register("billingAddress.city", {
                   required: "City is required",
+                  minLength: {
+                    value: 2,
+                    message: "City must be at least 2 characters",
+                  },
                 })}
                 error={errors.billingAddress?.city?.message}
               />
               <Input
-                label="Address"
+                label="Street Address"
+                placeholder="123 Main Street, Apt 4B"
                 {...register("billingAddress.address", {
                   required: "Address is required",
+                  minLength: {
+                    value: 5,
+                    message: "Address must be at least 5 characters",
+                  },
                 })}
                 error={errors.billingAddress?.address?.message}
               />
               <Input
-                label="Postal Code"
+                label="Postal Code / ZIP"
+                placeholder="10001"
                 {...register("billingAddress.postalCode", {
                   required: "Postal code is required",
+                  pattern: {
+                    value: /^[0-9-]+$/,
+                    message: "Invalid postal code format",
+                  },
                 })}
+                onChange={(e) => {
+                  const formatted = formatPostalCode(e.target.value);
+                  setValue("billingAddress.postalCode", formatted);
+                }}
                 error={errors.billingAddress?.postalCode?.message}
               />
             </div>
@@ -275,15 +387,35 @@ export default function BillingPage() {
                   {paymentMethods.map((method, idx) => (
                     <div
                       key={method.id}
-                      className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
+                      className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50"
                     >
-                      <div>
-                        <p className="font-medium">
-                          •••• {String(method.cardNumber).slice(-4)}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {method.cardHolder}
-                        </p>
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded flex items-center justify-center">
+                          <svg
+                            className="w-6 h-6 text-white"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                            />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-medium">
+                            •••• {String(method.cardNumber).slice(-4)}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {method.cardHolder}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            Expires: {method.expiryDate}
+                          </p>
+                        </div>
                       </div>
                       <Button
                         variant="danger"
@@ -305,51 +437,63 @@ export default function BillingPage() {
                 </h3>
                 <Input
                   label="Card Number"
+                  type="text"
                   placeholder="1234 5678 9012 3456"
+                  maxLength={19}
                   value={paymentForm.cardNumber}
-                  onChange={(e) =>
-                    setPaymentForm({
-                      ...paymentForm,
-                      cardNumber: e.target.value,
-                    })
-                  }
+                  onChange={(e) => {
+                    const formatted = formatCardNumber(e.target.value);
+                    if (formatted.replace(/\s/g, "").length <= 16) {
+                      setPaymentForm({
+                        ...paymentForm,
+                        cardNumber: formatted,
+                      });
+                    }
+                  }}
                 />
                 <Input
-                  label="Card Holder"
-                  placeholder="John Doe"
+                  label="Card Holder Name"
+                  type="text"
+                  placeholder="JOHN DOE"
                   value={paymentForm.cardHolder}
                   onChange={(e) =>
                     setPaymentForm({
                       ...paymentForm,
-                      cardHolder: e.target.value,
+                      cardHolder: e.target.value.toUpperCase(),
                     })
                   }
                 />
                 <div className="grid grid-cols-2 gap-4">
                   <Input
                     label="Expiry Date"
+                    type="text"
                     placeholder="MM/YY"
+                    maxLength={5}
                     value={paymentForm.expiryDate}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const formatted = formatExpiryDate(e.target.value);
                       setPaymentForm({
                         ...paymentForm,
-                        expiryDate: e.target.value,
-                      })
-                    }
+                        expiryDate: formatted,
+                      });
+                    }}
                   />
                   <Input
                     label="CVV"
+                    type="text"
                     placeholder="123"
+                    maxLength={4}
                     value={paymentForm.cvv}
-                    onChange={(e) =>
-                      setPaymentForm({ ...paymentForm, cvv: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const cleaned = e.target.value.replace(/\D/g, "");
+                      setPaymentForm({ ...paymentForm, cvv: cleaned });
+                    }}
                   />
                 </div>
                 <Button
                   variant="outline"
                   onClick={addPaymentMethod}
-                  className="cursor-pointer"
+                  className="cursor-pointer w-full sm:w-auto"
                 >
                   Add Payment Method
                 </Button>
@@ -360,7 +504,7 @@ export default function BillingPage() {
       </Card>
 
       {/* Navigation */}
-      <div className="mt-6 flex justify-between">
+      <div className="mt-6 flex justify-between gap-4">
         <Button
           variant="outline"
           className="cursor-pointer"
