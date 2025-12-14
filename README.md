@@ -22,6 +22,12 @@ A mini dashboard application for managing project lists in a SaaS product called
 - Debouncing for search functionality
 - Optimistic UI updates to reduce perceived latency
 
+### Task 4 - Unit Testing
+- Comprehensive test coverage for components, hooks, and pages
+- 100% test coverage for UI components
+- Integration tests for key user flows
+- Custom hooks testing with React Testing Library
+
 ## Prerequisites
 
 - Node.js 18+ or newer
@@ -56,6 +62,18 @@ yarn start
 ### 5. Run Linter
 ```bash
 yarn lint
+```
+
+### 6. Run Tests
+```bash
+# Run all tests
+yarn test
+
+# Run tests in watch mode
+yarn test:watch
+
+# Run tests with coverage report
+yarn test:coverage
 ```
 
 ## Folder Structure
@@ -100,11 +118,17 @@ fe-workspace-manager/
 │   └── utils.ts                # Utility functions
 ├── types/
 │   └── index.ts                # TypeScript type definitions
-└── data/                       # Mock data JSON files
-    ├── projects.json
-    ├── members.json
-    ├── activities.json
-    └── billing.json
+├── data/                       # Mock data JSON files
+│   ├── projects.json
+│   ├── members.json
+│   ├── activities.json
+│   └── billing.json
+└── __tests__/                  # Unit and integration tests
+    ├── components/
+    │   ├── ui/
+    │   └── table/
+    ├── hooks/
+    └── pages/
 ```
 
 ## Technical Approach
@@ -197,19 +221,205 @@ await fetch('/api/projects/id', { method: 'PATCH', body: ... });
 3. API route appends data to `data/billing.json`
 4. Return success response
 
-## Testing (Future Improvement)
+## Unit Testing
 
-For testing implementation, recommended:
+### Testing Stack
+- **Jest**: Testing framework for unit and integration tests
+- **React Testing Library**: For testing React components
+- **@testing-library/user-event**: For simulating user interactions
+- **@testing-library/react-hooks**: For testing custom hooks
+
+### Test Coverage
+
+#### UI Components (100% Coverage)
+All reusable UI components in `components/ui/` are fully tested:
+
+**Button Component**
+- Renders with children and handles click events
+- Applies correct variant styles (primary, secondary, outline)
+- Handles different sizes (sm, md, lg)
+- Disabled and loading states
+- Custom className application
+
+**Card Component**
+- Card, CardHeader, CardBody, CardFooter rendering
+- Proper styling and className composition
+- Complex children handling
+
+**Input Component**
+- Label association and ID generation
+- Error state and validation messages
+- Different input types (text, email, password, number)
+- Controlled and uncontrolled modes
+- Disabled and readonly states
+- User input handling
+
+**Badge Component**
+- Status-based styling (Active, Paused, Archived)
+- Custom className support
+- Complex children content
+
+**Modal Component**
+- Open/close state handling
+- Backdrop click behavior
+- Primary and secondary button actions
+- Custom labels for buttons
+
+**Skeleton Component**
+- Loading state animation
+- Custom dimensions and styling
+- Multiple skeleton instances
+
+#### Table Component
+**DataTable Component**
+- Renders table with data and headers
+- Empty state with custom messages
+- Loading skeleton with configurable rows
+- Row click handling with callbacks
+- Custom column styling and rendering
+- Responsive design with overflow handling
+
+#### Custom Hooks
+**useDebounce Hook**
+- Initial value handling
+- Delayed value updates (default 500ms)
+- Rapid value changes with timeout cancellation
+- Multiple data types support (string, number, boolean, object, array)
+- Custom delay values
+- Cleanup on unmount
+- Search input simulation
+
+#### Page Components
+
+**Login Page**
+- Form rendering with email and password inputs
+- Login submission with credentials
+- Successful login redirect to /projects
+- Error message display on login failure
+- Loading state during submission
+- Form validation and error clearing
+
+**Dashboard Layout**
+- Loading skeleton when isLoading
+- User information display
+- Navigation buttons (Projects, Settings)
+- Logout functionality
+- Mobile menu toggle
+- Responsive layout
+
+**Projects Page**
+- Project list rendering with pagination
+- Search functionality with debouncing
+- Status filter dropdown
+- Empty state handling
+- Navigation to project detail
+- Table headers and data display
+
+**Project Detail Page**
+- Loading skeleton initially
+- Project information display
+- Status update with optimistic UI
+- Team members list
+- Activity log display
+- Back navigation
+- Error state for non-existent projects
+
+**Billing Settings Page**
+- View billing information
+- Company profile display
+- Billing address rendering
+- Payment methods list with masked card numbers
+- Default payment method badge
+- Remove payment method with API call
+
+**Billing Form Page (Multi-step)**
+- Step 1: Company Profile validation (name, email, phone)
+- Step 2: Billing Address validation (country, city, address, postal code)
+- Step 3: Payment Methods (add, remove, default selection)
+- Form field formatting (phone, card number, expiry date, CVV)
+- Step navigation (Next, Previous)
+- Form submission with success/error modals
+- Data persistence across steps
+
+**Error and Not Found Pages**
+- Error page rendering with try again button
+- 404 page with back to projects link
+- Proper styling and layout
+
+**Root Layout and Home Page**
+- AuthProvider wrapper
+- Metadata export
+- Redirect to /projects
+
+### Running Tests
+
 ```bash
-yarn add -D @testing-library/react @testing-library/jest-dom jest
+# Run all tests once
+yarn test
+
+# Run tests in watch mode (recommended for development)
+yarn test:watch
+
+# Run tests with coverage report
+yarn test:coverage
+
+# Run specific test file
+yarn test Button.test.tsx
+
+# Run tests matching a pattern
+yarn test --testNamePattern="Button Component"
 ```
 
-Example test cases that can be implemented:
-- Test render project list
-- Test search functionality
-- Test filter by status
-- Test form validation
-- Test optimistic updates
+### Test Coverage Report
+
+After running `yarn test:coverage`, you'll see a detailed coverage report in your terminal:
+
+![Test Coverage Report](./public/unit-test/test-coverage.jpg)
+
+The coverage report shows:
+- Statement coverage: Percentage of code statements executed
+- Branch coverage: Percentage of code branches (if/else) taken
+- Function coverage: Percentage of functions called
+- Line coverage: Percentage of lines executed
+
+All UI components achieve 100% coverage across all metrics.
+
+### Writing New Tests
+
+When adding new components or features, follow this testing pattern:
+
+```typescript
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import YourComponent from "@/components/YourComponent";
+
+describe("YourComponent", () => {
+  it("renders correctly", () => {
+    render(<YourComponent />);
+    expect(screen.getByText("Expected Text")).toBeInTheDocument();
+  });
+
+  it("handles user interaction", async () => {
+    const user = userEvent.setup();
+    const handleClick = jest.fn();
+    
+    render(<YourComponent onClick={handleClick} />);
+    
+    await user.click(screen.getByRole("button"));
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+});
+```
+
+### Test Best Practices
+
+1. **Test User Behavior**: Focus on what users see and do, not implementation details
+2. **Use Semantic Queries**: Prefer `getByRole`, `getByLabelText` over `getByTestId`
+3. **Mock External Dependencies**: Mock API calls, router, and external libraries
+4. **Test Error States**: Always test error handling and edge cases
+5. **Keep Tests Isolated**: Each test should be independent and not rely on others
+6. **Use waitFor for Async**: Always use `waitFor` for asynchronous operations
+7. **Clean Up**: Clear mocks and restore console methods after tests
 
 ## Incomplete Parts / Improvement Ideas
 
@@ -225,9 +435,10 @@ Example test cases that can be implemented:
 - Responsive design
 - Loading states and skeletons
 - Error handling
+- Comprehensive unit testing with high coverage
 
 ### Future Improvements
-- Unit and integration tests
+- E2E tests with Playwright or Cypress
 - Server-side rendering for SEO
 - Real backend integration
 - Advanced caching strategy (React Query / SWR)
@@ -238,6 +449,7 @@ Example test cases that can be implemented:
 - Advanced filtering with multiple criteria
 - User preferences persistence
 - Dark mode support
+- Performance monitoring and analytics
 
 ## Design Decisions
 
@@ -264,6 +476,13 @@ Example test cases that can be implemented:
 - Easy to modify and debug
 - Note: Not suitable for production, only for development/demo
 
+### Why Jest and React Testing Library?
+- Industry standard for React testing
+- Encourages testing user behavior over implementation
+- Excellent TypeScript support
+- Rich ecosystem of utilities and matchers
+- Fast test execution with parallel runs
+
 ## Main Dependencies
 ```json
 {
@@ -281,6 +500,18 @@ Example test cases that can be implemented:
 }
 ```
 
+### Dev Dependencies (Testing)
+```json
+{
+  "jest": "^29.7.0",
+  "jest-environment-jsdom": "^29.7.0",
+  "@testing-library/react": "^14.1.2",
+  "@testing-library/jest-dom": "^6.1.5",
+  "@testing-library/user-event": "^14.5.1",
+  "@types/jest": "^29.5.11"
+}
+```
+
 ## Assumptions Made
 
 1. **Authentication**: Mock authentication is sufficient for demo purposes
@@ -289,6 +520,7 @@ Example test cases that can be implemented:
 4. **User Permissions**: All users have full access to all features
 5. **Browser Support**: Modern browsers with ES6+ support
 6. **Data Volume**: Assuming small to medium dataset (< 1000 items)
+7. **Testing Environment**: JSDOM is sufficient for component testing
 
 ## Contact
 
@@ -297,3 +529,5 @@ If you have questions regarding implementation or technical decisions, please co
 ---
 
 **Built with Next.js 16, React 19, TypeScript, and Tailwind CSS v4**
+
+**Tested with Jest and React Testing Library**
