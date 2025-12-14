@@ -1,7 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { Project, ProjectStatus } from "@/types";
 import { Card, CardBody } from "@/components/ui/Card";
@@ -16,39 +16,44 @@ import { PROJECT_STATUSES } from "@/lib/constants";
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  type Filters = { search: string; statusFilter: string };
+
+  const { register, watch } = useForm<Filters>({
+    defaultValues: { search: "", statusFilter: "all" },
+  });
+
+  const watchedSearch = watch("search");
+  const watchedStatusFilter = watch("statusFilter");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const debouncedSearch = useDebounce(search, 500);
+  const debouncedSearch = useDebounce(watchedSearch, 500);
   const router = useRouter();
-
   useEffect(() => {
+    const fetchProjects = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: "10",
+          ...(watchedStatusFilter !== "all" && { status: watchedStatusFilter }),
+          ...(debouncedSearch && { search: debouncedSearch }),
+        });
+
+        const response = await fetch(`/api/projects?${params}`);
+        const data = await response.json();
+
+        setProjects(data.data);
+        setTotalPages(data.pagination.totalPages);
+      } catch (error) {
+        console.error("Failed to fetch projects:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchProjects();
-  }, [debouncedSearch, statusFilter, currentPage]);
-
-  const fetchProjects = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: "10",
-        ...(statusFilter !== "all" && { status: statusFilter }),
-        ...(debouncedSearch && { search: debouncedSearch }),
-      });
-
-      const response = await fetch(`/api/projects?${params}`);
-      const data = await response.json();
-
-      setProjects(data.data);
-      setTotalPages(data.pagination.totalPages);
-    } catch (error) {
-      console.error("Failed to fetch projects:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [debouncedSearch, watchedStatusFilter, currentPage]);
 
   return (
     <div>
@@ -62,16 +67,11 @@ export default function ProjectsPage() {
         <CardBody>
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
-              <Input
-                placeholder="Search projects..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+              <Input placeholder="Search projects..." {...register("search")} />
             </div>
             <div className="flex gap-2">
               <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                {...register("statusFilter")}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
               >
                 <option value="all">All Status</option>

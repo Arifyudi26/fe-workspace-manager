@@ -214,6 +214,13 @@
     "@eslint/core" "^0.17.0"
     "levn" "^0.4.1"
 
+"@hookform/resolvers@^5.2.2":
+  "integrity" "sha512-A/IxlMLShx3KjV/HeTcTfaMxdwy690+L/ZADoeaTltLx+CVuzkeVIPuybK3jrRfw7YZnmdKsVVHAlEPIAEUNlA=="
+  "resolved" "https://registry.npmjs.org/@hookform/resolvers/-/resolvers-5.2.2.tgz"
+  "version" "5.2.2"
+  dependencies:
+    "@standard-schema/utils" "^0.3.0"
+
 "@humanfs/core@^0.19.1":
   "integrity" "sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA=="
   "resolved" "https://registry.npmjs.org/@humanfs/core/-/core-0.19.1.tgz"
@@ -328,6 +335,11 @@
   "integrity" "sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g=="
   "resolved" "https://registry.npmjs.org/@rtsao/scc/-/scc-1.1.0.tgz"
   "version" "1.1.0"
+
+"@standard-schema/utils@^0.3.0":
+  "integrity" "sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g=="
+  "resolved" "https://registry.npmjs.org/@standard-schema/utils/-/utils-0.3.0.tgz"
+  "version" "0.3.0"
 
 "@swc/helpers@0.5.15":
   "integrity" "sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g=="
@@ -2176,12 +2188,17 @@
   dependencies:
     "scheduler" "^0.27.0"
 
+"react-hook-form@^7.55.0", "react-hook-form@^7.68.0":
+  "integrity" "sha512-oNN3fjrZ/Xo40SWlHf1yCjlMK417JxoSJVUXQjGdvdRCU07NTFei1i1f8ApUAts+IVh14e4EdakeLEA+BEAs/Q=="
+  "resolved" "https://registry.npmjs.org/react-hook-form/-/react-hook-form-7.68.0.tgz"
+  "version" "7.68.0"
+
 "react-is@^16.13.1":
   "integrity" "sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ=="
   "resolved" "https://registry.npmjs.org/react-is/-/react-is-16.13.1.tgz"
   "version" "16.13.1"
 
-"react@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", "react@^19.2.1", "react@>= 16.8.0 || 17.x.x || ^18.0.0-0 || ^19.0.0-0", "react@>=18.0.0", "react@19.2.1":
+"react@^16.8.0 || ^17 || ^18 || ^19", "react@^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0", "react@^19.2.1", "react@>= 16.8.0 || 17.x.x || ^18.0.0-0 || ^19.0.0-0", "react@>=18.0.0", "react@19.2.1":
   "integrity" "sha512-DGrYcCWK7tvYMnWh79yrPHt+vdx9tY+1gPZa7nJQtO/p8bLTDaHp4dzwEhQB7pZ4Xe3ok4XKuEPrVuc+wlpkmw=="
   "resolved" "https://registry.npmjs.org/react/-/react-19.2.1.tgz"
   "version" "19.2.1"
@@ -2791,7 +2808,7 @@
   "resolved" "https://registry.npmjs.org/zod-validation-error/-/zod-validation-error-4.0.2.tgz"
   "version" "4.0.2"
 
-"zod@^3.25.0 || ^4.0.0":
+"zod@^3.25.0 || ^4.0.0", "zod@^4.1.13":
   "integrity" "sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig=="
   "resolved" "https://registry.npmjs.org/zod/-/zod-4.1.13.tgz"
   "version" "4.1.13"

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useForm, useFieldArray } from "react-hook-form";
+import Modal from "@/components/ui/Modal";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -8,23 +10,12 @@ import { BillingData, PaymentMethod } from "@/types";
 
 const STEPS = ["Company Profile", "Billing Address", "Payment Methods"];
 
+const generateId = (): string => {
+  return Date.now().toString();
+};
+
 export default function BillingPage() {
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<BillingData>({
-    companyProfile: {
-      companyName: "",
-      email: "",
-      phone: "",
-    },
-    billingAddress: {
-      country: "",
-      city: "",
-      address: "",
-      postalCode: "",
-    },
-    paymentMethods: [],
-  });
-
   const [paymentForm, setPaymentForm] = useState<Partial<PaymentMethod>>({
     cardNumber: "",
     cardHolder: "",
@@ -33,46 +24,54 @@ export default function BillingPage() {
     isDefault: false,
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const {
+    register,
+    control,
+    handleSubmit,
+    trigger,
+    formState: { errors },
+  } = useForm<BillingData>({
+    defaultValues: {
+      companyProfile: { companyName: "", email: "", phone: "" },
+      billingAddress: { country: "", city: "", address: "", postalCode: "" },
+      paymentMethods: [],
+    },
+  });
 
-  const validateStep = () => {
-    const newErrors: Record<string, string> = {};
+  const {
+    fields: paymentMethods,
+    append,
+    remove,
+  } = useFieldArray({
+    control,
+    name: "paymentMethods",
+  });
 
+  const validateStep = async () => {
     if (currentStep === 0) {
-      if (!formData.companyProfile.companyName) {
-        newErrors.companyName = "Company name is required";
-      }
-      if (!formData.companyProfile.email) {
-        newErrors.email = "Email is required";
-      }
-      if (!formData.companyProfile.phone) {
-        newErrors.phone = "Phone is required";
-      }
+      return await trigger([
+        "companyProfile.companyName",
+        "companyProfile.email",
+        "companyProfile.phone",
+      ]);
     }
 
     if (currentStep === 1) {
-      if (!formData.billingAddress.country) {
-        newErrors.country = "Country is required";
-      }
-      if (!formData.billingAddress.city) {
-        newErrors.city = "City is required";
-      }
-      if (!formData.billingAddress.address) {
-        newErrors.address = "Address is required";
-      }
-      if (!formData.billingAddress.postalCode) {
-        newErrors.postalCode = "Postal code is required";
-      }
+      return await trigger([
+        "billingAddress.country",
+        "billingAddress.city",
+        "billingAddress.address",
+        "billingAddress.postalCode",
+      ]);
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return true;
   };
 
   const handleNext = () => {
-    if (validateStep()) {
-      setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
-    }
+    validateStep().then((ok) => {
+      if (ok) setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
+    });
   };
 
   const handlePrevious = () => {
@@ -81,24 +80,29 @@ export default function BillingPage() {
 
   const addPaymentMethod = () => {
     if (!paymentForm.cardNumber || !paymentForm.cardHolder) {
-      alert("Please fill in all payment details");
+      setModal({
+        isOpen: true,
+        title: "Missing payment details",
+        message: "Please fill in all payment details",
+      });
       return;
     }
 
     const newMethod: PaymentMethod = {
-      id: Date.now().toString(),
+      id: generateId(),
       cardNumber: paymentForm.cardNumber || "",
       cardHolder: paymentForm.cardHolder || "",
       expiryDate: paymentForm.expiryDate || "",
       cvv: paymentForm.cvv || "",
-      isDefault:
-        formData.paymentMethods.length === 0 || paymentForm.isDefault || false,
+      isDefault: paymentForm.isDefault || false,
     };
 
-    setFormData({
-      ...formData,
-      paymentMethods: [...formData.paymentMethods, newMethod],
-    });
+    // If this is the first payment method, mark default
+    if (paymentMethods.length === 0) {
+      newMethod.isDefault = true;
+    }
+
+    append(newMethod);
 
     setPaymentForm({
       cardNumber: "",
@@ -109,32 +113,54 @@ export default function BillingPage() {
     });
   };
 
-  const removePaymentMethod = (id: string) => {
-    setFormData({
-      ...formData,
-      paymentMethods: formData.paymentMethods.filter((m) => m.id !== id),
-    });
+  const removePaymentMethod = (index: number) => {
+    remove(index);
   };
 
-  const handleSubmit = async () => {
+  const onSubmit = async (data: BillingData) => {
     try {
       const response = await fetch("/api/billing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(data),
       });
 
       if (response.ok) {
-        alert("Billing settings saved successfully!");
+        setModal({
+          isOpen: true,
+          title: "Success",
+          message: "Billing settings saved successfully!",
+        });
       }
     } catch (error) {
       console.error("Failed to save billing:", error);
-      alert("Failed to save billing settings");
+      setModal({
+        isOpen: true,
+        title: "Error",
+        message: "Failed to save billing settings",
+      });
     }
   };
 
+  const [modal, setModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
+
+  const closeModal = () => setModal({ isOpen: false, title: "", message: "" });
+
   return (
-    <div>
+    <>
+      <Modal
+        title={modal.title}
+        isOpen={modal.isOpen}
+        onClose={closeModal}
+        primaryLabel="OK"
+      >
+        <p>{modal.message}</p>
+      </Modal>
+
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Billing Settings</h1>
         <p className="text-gray-600 mt-1">Manage your billing information</p>
@@ -181,47 +207,26 @@ export default function BillingPage() {
             <div className="space-y-4">
               <Input
                 label="Company Name"
-                value={formData.companyProfile.companyName}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    companyProfile: {
-                      ...formData.companyProfile,
-                      companyName: e.target.value,
-                    },
-                  })
-                }
-                error={errors.companyName}
+                {...register("companyProfile.companyName", {
+                  required: "Company name is required",
+                })}
+                error={errors.companyProfile?.companyName?.message}
               />
               <Input
                 label="Email"
                 type="email"
-                value={formData.companyProfile.email}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    companyProfile: {
-                      ...formData.companyProfile,
-                      email: e.target.value,
-                    },
-                  })
-                }
-                error={errors.email}
+                {...register("companyProfile.email", {
+                  required: "Email is required",
+                })}
+                error={errors.companyProfile?.email?.message}
               />
               <Input
                 label="Phone"
                 type="tel"
-                value={formData.companyProfile.phone}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    companyProfile: {
-                      ...formData.companyProfile,
-                      phone: e.target.value,
-                    },
-                  })
-                }
-                error={errors.phone}
+                {...register("companyProfile.phone", {
+                  required: "Phone is required",
+                })}
+                error={errors.companyProfile?.phone?.message}
               />
             </div>
           )}
@@ -230,59 +235,31 @@ export default function BillingPage() {
             <div className="space-y-4">
               <Input
                 label="Country"
-                value={formData.billingAddress.country}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    billingAddress: {
-                      ...formData.billingAddress,
-                      country: e.target.value,
-                    },
-                  })
-                }
-                error={errors.country}
+                {...register("billingAddress.country", {
+                  required: "Country is required",
+                })}
+                error={errors.billingAddress?.country?.message}
               />
               <Input
                 label="City"
-                value={formData.billingAddress.city}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    billingAddress: {
-                      ...formData.billingAddress,
-                      city: e.target.value,
-                    },
-                  })
-                }
-                error={errors.city}
+                {...register("billingAddress.city", {
+                  required: "City is required",
+                })}
+                error={errors.billingAddress?.city?.message}
               />
               <Input
                 label="Address"
-                value={formData.billingAddress.address}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    billingAddress: {
-                      ...formData.billingAddress,
-                      address: e.target.value,
-                    },
-                  })
-                }
-                error={errors.address}
+                {...register("billingAddress.address", {
+                  required: "Address is required",
+                })}
+                error={errors.billingAddress?.address?.message}
               />
               <Input
                 label="Postal Code"
-                value={formData.billingAddress.postalCode}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    billingAddress: {
-                      ...formData.billingAddress,
-                      postalCode: e.target.value,
-                    },
-                  })
-                }
-                error={errors.postalCode}
+                {...register("billingAddress.postalCode", {
+                  required: "Postal code is required",
+                })}
+                error={errors.billingAddress?.postalCode?.message}
               />
             </div>
           )}
@@ -290,19 +267,19 @@ export default function BillingPage() {
           {currentStep === 2 && (
             <div className="space-y-6">
               {/* Existing Payment Methods */}
-              {formData.paymentMethods.length > 0 && (
+              {paymentMethods.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="text-sm font-medium text-gray-700">
                     Saved Payment Methods
                   </h3>
-                  {formData.paymentMethods.map((method) => (
+                  {paymentMethods.map((method, idx) => (
                     <div
                       key={method.id}
                       className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
                     >
                       <div>
                         <p className="font-medium">
-                          •••• {method.cardNumber.slice(-4)}
+                          •••• {String(method.cardNumber).slice(-4)}
                         </p>
                         <p className="text-sm text-gray-500">
                           {method.cardHolder}
@@ -312,7 +289,7 @@ export default function BillingPage() {
                         variant="danger"
                         size="sm"
                         className="cursor-pointer"
-                        onClick={() => removePaymentMethod(method.id)}
+                        onClick={() => removePaymentMethod(idx)}
                       >
                         Remove
                       </Button>
@@ -397,11 +374,11 @@ export default function BillingPage() {
             Next
           </Button>
         ) : (
-          <Button onClick={handleSubmit} className="cursor-pointer">
+          <Button onClick={handleSubmit(onSubmit)} className="cursor-pointer">
             Save Billing Settings
           </Button>
         )}
       </div>
-    </div>
+    </>
   );
 }
